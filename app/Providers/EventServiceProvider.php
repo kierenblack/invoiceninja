@@ -712,6 +712,12 @@ class EventServiceProvider extends ServiceProvider
         'eloquent.created: App\Models\Payment' => [
             PostJournalEntriesForPayment::class,
         ],
+        'eloquent.created: App\Models\Expense' => [
+            \App\Listeners\PostJournalEntriesForExpense::class,
+        ],
+        'eloquent.created: App\Models\BankTransaction' => [
+            \App\Listeners\PostJournalEntriesForBankTransaction::class,
+        ],
     ];
 
     /**

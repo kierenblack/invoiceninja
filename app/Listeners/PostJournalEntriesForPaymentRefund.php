@@ -4,11 +4,13 @@ namespace App\Listeners;
 
 use App\Models\Payment;
 use App\Models\JournalEntry;
-use App\Models\ChartOfAccount;
+use App\Listeners\Traits\ResolvesAccountMappings;
 use Carbon\Carbon;
 
 class PostJournalEntriesForPaymentRefund
 {
+    use ResolvesAccountMappings;
+
     public function handle(Payment $payment)
     {
         $refundAmount = (float) ($payment->refunded ?? 0);
@@ -17,7 +19,6 @@ class PostJournalEntriesForPaymentRefund
             return;
         }
 
-        // Prevent duplicate refund postings
         if (JournalEntry::where('source_type', Payment::class)
             ->where('source_id', $payment->id)
             ->where('description', 'LIKE', '%Refund%')
@@ -28,22 +29,17 @@ class PostJournalEntriesForPaymentRefund
         $companyId = $payment->company_id;
         $date      = Carbon::now();
 
-        $cash = ChartOfAccount::where('company_id', $companyId)
-            ->where('code', '1000') // Cash
-            ->first();
+        // payment_refund: debit=1100 (AR), credit=1000 (Cash)
+        $accounts = $this->resolveAccounts($companyId, 'payment_refund', '1100', '1000');
 
-        $ar = ChartOfAccount::where('company_id', $companyId)
-            ->where('code', '1100') // Accounts Receivable
-            ->first();
-
-        if (! $cash || ! $ar) {
+        if (! $accounts) {
             return;
         }
 
         // Debit AR (customer owes again)
         JournalEntry::create([
             'company_id'          => $companyId,
-            'chart_of_account_id' => $ar->id,
+            'chart_of_account_id' => $accounts['debit']->id,
             'source_type'         => Payment::class,
             'source_id'           => $payment->id,
             'debit'               => $refundAmount,
@@ -55,7 +51,7 @@ class PostJournalEntriesForPaymentRefund
         // Credit Cash
         JournalEntry::create([
             'company_id'          => $companyId,
-            'chart_of_account_id' => $cash->id,
+            'chart_of_account_id' => $accounts['credit']->id,
             'source_type'         => Payment::class,
             'source_id'           => $payment->id,
             'debit'               => 0,

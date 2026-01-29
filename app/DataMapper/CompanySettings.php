@@ -536,6 +536,8 @@ class CompanySettings extends BaseSettings
     public string $ses_topic_arn = '';
     public string $ses_from_address = '';
 
+    public $account_mappings = '';
+
     public static $casts = [
         'ses_from_address' => 'string',
         'ses_topic_arn' => 'string',
@@ -798,6 +800,7 @@ class CompanySettings extends BaseSettings
         'purchase_order_number_counter' => 'integer',
         'email_template_payment_failed'      => 'string',
         'email_subject_payment_failed'       => 'string',
+        'account_mappings'                   => 'object',
     ];
 
     public static $free_plan_casts = [

@@ -483,6 +483,7 @@ Route::group(['middleware' => ['throttle:api', 'token_auth', 'valid_json', 'loca
     Route::get('reports/trial_balance.csv', [TrialBalanceController::class, 'csv']);
     Route::get('reports/balance_sheet.csv', [BalanceSheetController::class, 'csv']);
     Route::get('reports/income_statement.csv', [IncomeStatementController::class, 'csv']);
+    Route::get('journal_entries', [\App\Http\Controllers\JournalEntryController::class, 'index']);
 });
 
 Route::post('api/v1/sms_reset', [TwilioController::class, 'generate2faResetCode'])->name('sms_reset.generate')->middleware('throttle:daily-verify');

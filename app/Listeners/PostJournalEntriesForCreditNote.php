@@ -4,19 +4,19 @@ namespace App\Listeners;
 
 use App\Models\Invoice;
 use App\Models\JournalEntry;
-use App\Models\ChartOfAccount;
+use App\Listeners\Traits\ResolvesAccountMappings;
 use Carbon\Carbon;
 
 class PostJournalEntriesForCreditNote
 {
+    use ResolvesAccountMappings;
+
     public function handle(Invoice $invoice)
     {
-        // Only act on credit notes
         if (! property_exists($invoice, 'is_credit') || ! $invoice->is_credit) {
             return;
         }
 
-        // Prevent duplicate postings
         if (JournalEntry::where('source_type', Invoice::class)
             ->where('source_id', $invoice->id)
             ->where('description', 'LIKE', '%Credit note%')
@@ -28,22 +28,17 @@ class PostJournalEntriesForCreditNote
         $amount    = $invoice->amount;
         $date      = Carbon::parse($invoice->date ?? now());
 
-        $ar = ChartOfAccount::where('company_id', $companyId)
-            ->where('code', '1100') // Accounts Receivable
-            ->first();
+        // credit_note: debit=4000 (Sales), credit=1100 (AR)
+        $accounts = $this->resolveAccounts($companyId, 'credit_note', '4000', '1100');
 
-        $sales = ChartOfAccount::where('company_id', $companyId)
-            ->where('code', '4000') // Sales
-            ->first();
-
-        if (! $ar || ! $sales) {
+        if (! $accounts) {
             return;
         }
 
-        // Credit AR (reduce receivable)
+        // Credit AR (reduce receivable) - use the credit account
         JournalEntry::create([
             'company_id'          => $companyId,
-            'chart_of_account_id' => $ar->id,
+            'chart_of_account_id' => $accounts['credit']->id,
             'source_type'         => Invoice::class,
             'source_id'           => $invoice->id,
             'debit'               => 0,
@@ -52,10 +47,10 @@ class PostJournalEntriesForCreditNote
             'entry_date'          => $date,
         ]);
 
-        // Debit Sales (reverse revenue)
+        // Debit Sales (reverse revenue) - use the debit account
         JournalEntry::create([
             'company_id'          => $companyId,
-            'chart_of_account_id' => $sales->id,
+            'chart_of_account_id' => $accounts['debit']->id,
             'source_type'         => Invoice::class,
             'source_id'           => $invoice->id,
             'debit'               => $amount,
