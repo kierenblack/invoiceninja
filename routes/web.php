@@ -40,11 +40,6 @@ Route::middleware(['url_db'])->group(function () {
     Route::post('/user/confirm/{confirmation_code}', [UserController::class, 'confirmWithPassword'])->middleware('throttle:10,1');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/accounting/reports', function () {
-        return view('accounting.reports');
-    });
-});
 
 Route::get('stripe/signup/{token}', [StripeConnectController::class, 'initialize'])->middleware('throttle:10,1')->name('stripe_connect.initialization');
 Route::get('stripe/completed', [StripeConnectController::class, 'completed'])->middleware('throttle:10,1')->name('stripe_connect.return');

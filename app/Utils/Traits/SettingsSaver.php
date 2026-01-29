@@ -78,7 +78,7 @@ trait SettingsSaver
                 }
 
                 continue;
-            } elseif ($key == 'pdf_variables') {
+            } elseif ($key == 'pdf_variables' || $key == 'account_mappings') {
                 continue;
             }
 

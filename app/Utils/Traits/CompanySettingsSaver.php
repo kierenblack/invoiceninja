@@ -147,7 +147,7 @@ trait CompanySettingsSaver
                 }
 
                 continue;
-            } elseif ($key == 'pdf_variables') {
+            } elseif ($key == 'pdf_variables' || $key == 'account_mappings') {
                 continue;
             }
 
@@ -221,8 +221,10 @@ trait CompanySettingsSaver
                 }
 
                 continue;
-            } elseif ($key == 'pdf_variables') {
-                settype($settings->{$key}, 'object');
+            } elseif ($key == 'pdf_variables' || $key == 'account_mappings') {
+                if (property_exists($settings, $key)) {
+                    settype($settings->{$key}, 'object');
+                }
             }
 
             //try casting floats here
